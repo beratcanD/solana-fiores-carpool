@@ -1,0 +1,283 @@
+{% extends "carpooling/main.html" %}
+{% block head %}
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+	<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    	<style>
+    		p span {
+    			display: inline-block;
+    			width: 120px;
+    		}
+    	</style>
+{% endblock %}
+{% block content %}
+<div class="body">
+	<div style="margin-bottom: 100px;">
+	<div id="map" style="width: 100%; height: 80vh"></div>
+	<div style="margin-top: 40px;">
+		<h2>Trip Details</h2>
+		<p>
+			<span>Date: </span>
+			{{ context.trip.created_at }}
+		</p>
+		<p>
+			<span>Destination: </span>
+			{{ context.trip.destination }}
+		</p>
+		<p>
+			<span>From:</span>
+			{{ context.trip.origin }}
+		</p>
+		<p>
+			<span>Driver's name: </span>
+			{{ context.trip.driver.user.username }}
+		</p>
+		<p>
+			<span>Role:</span>
+			{{ context.trip.role }}
+		</p>
+		<p>
+			<span>Status: </span>
+			{{ context.trip.status|upper }}
+		</p>
+	</div>
+	
+	<div>
+	{% if context.trip.requests %}
+		<h2>Match Requests</h2>
+		{% for match in context.trip.requests %}
+			<div style="max-width: 700px; border: 1px solid grey; padding: 20px; border-radius: 10px;">
+				<p style="font-weight: bold;"> {{ match.destination }} </p>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+				<p>From: {{ match.origin }} </p> 
+				<p>Username: {{ match.user.username }} </p>
+				</div>
+				<div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 5px;">
+					<a href="/accept-trip?ride_id={{ context.trip.id }}&match_id={{ match.id }} "class="a-match-btn" style="min-width:150px; padding: 5px; background-color: green; border: none; color: white; font-size: 14px; cursor: pointer; font-weight: bold; border-radius: 4px; text-align: center;">Accept ride</a>
+					</div>
+			</div>	
+		{% endfor %}
+	{% endif %}
+	</div>
+	
+	<div style="margin-top: 50px;">
+		{% if context.trip.role == "passenger" %}
+			{% if context.trip.status == "started" or context.trip.status == "pending" %}
+				{% if context.trip.driver %}
+					<h2>Matched Driver</h2>
+					<div class="results" style="margin-bottom: 100px; border: 1px solid grey; padding: 20px;">
+						<div>
+							<p style="font-weight: bold;"> {{ context.trip.driver.destination }} </p>
+							<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+								<p>From: {{ context.trip.driver.origin }} </p> 
+								<p>Username: {{ context.trip.driver.user.username }} </p>
+								<p>Status: {{ context.trip.driver.status }} </p>
+							</div>
+						</div>
+					</div>
+				{% else %}
+					<h2>Available Drivers</h2>
+					{% if context.matches %}
+						{% for match in context.matches %}
+							<div>
+								<p style="font-weight: bold;"> {{ match.destination }} </p>
+								<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+									<p>From: {{ match.origin }} </p> 
+									<p>Username: {{ match.user.username }} </p>
+									<p>Match rate: {{ match.match_rate }}</p>
+									<div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 5px;">
+											<a href="/match/driver/?ride_id={{ context.trip.id }}&match_id={{ match.id }} "class="a-match-btn" style="min-width:150px; padding: 5px; background-color: green; border: none; color: white; font-size: 14px; cursor: pointer; font-weight: bold; border-radius: 4px; text-align: center;">Request ride</a>
+											</div>
+								</div>
+							</div>
+						{% endfor %}
+					{% else %}
+						<p>Sorry, no driver available yet.</p>
+					{% endif %}
+				{% endif %}
+				<div class="end-ride-wrapper"  style="width: 100%; display: flex; justify-content: flex-end; margin-top: 50px;">
+											<a href="/end-trip/{{ context.trip.id  }}" class="end-ride-btn" style="min-width:150px; padding: 10px; background-color: red; border: none; color: white; font-size: 16px; cursor: pointer; font-weight: bold; border-radius: 8px; text-align: center;">End Ride</a>
+										</div>
+			{% else %}
+				{% if context.trip.driver %}
+					<h2>Matched Driver</h2>
+					<div class="results" style="margin-bottom: 100px; border: 1px solid grey; padding: 20px;">
+						<div>
+							<p style="font-weight: bold;"> {{ context.trip.driver.destination }} </p>
+							<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+								<p>From: {{ context.trip.driver.origin }} </p> 
+								<p>Username: {{ context.trip.driver.user.username }} </p>
+								<p>Status: {{ context.trip.driver.status }} </p>
+							</div>
+						</div>
+					</div>
+				{% endif %}
+			{% endif %}
+		{% else %}
+			{% if context.trip.status == "started" or context.trip.status == "pending" %}
+				{% if context.trip.passengers %}
+					<h2>Matched passengers</h2>
+					<div class="results" style="margin-bottom: 100px;">
+						{% for match in context.trip.passengers %}
+							<div style="padding: 20px; border: 1px solid grey;">
+								<p style="font-weight: bold;"> {{ match.destination }} </p>
+								<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+									<p>From: {{ match.origin }} </p> 
+									<p>Username: {{ match.user.username }} </p>
+									<p>Status: {{ match.status }} </p>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				{% endif %}
+				<h2>Available passengers</h2>
+					{% if context.matches %}	
+						{% for match in context.matches %}
+							<div>
+								<p style="font-weight: bold;"> {{ match.destination }} </p>
+								<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+									<p>From: {{ match.origin }} </p> 
+									<p>Username: {{ match.user.username }} </p>
+									<p>Match rate: {{ match.match_rate }}</p>
+									<div style="width: 100%; display: flex; justify-content: flex-end; margin-top: 5px;">
+											<a href="/match/passenger/?ride_id={{ context.trip.id }}&match_id={{ match.id }} "class="a-match-btn" style="min-width:150px; padding: 5px; background-color: green; border: none; color: white; font-size: 14px; cursor: pointer; font-weight: bold; border-radius: 4px; text-align: center;">Offer ride</a>
+											</div>
+								</div>
+							</div>
+						{% endfor %}
+					{% else %}
+						<p>Sorry, no passenger available yet.</p>
+					{% endif %}
+				<div class="end-ride-wrapper"  style="width: 100%; display: flex; justify-content: flex-end; margin-top: 50px;">
+											<a href="/end-trip/{{ context.trip.id  }}" class="end-ride-btn" style="min-width:150px; padding: 10px; background-color: red; border: none; color: white; font-size: 16px; cursor: pointer; font-weight: bold; border-radius: 8px; text-align: center;">End Ride</a>
+										</div>
+			{% else %}
+				<h2>Matched Passengers</h2>
+				{% if context.trip.passengers %}
+					<div class="results" style="margin-bottom: 100px; border: 1px solid grey; padding: 20px;">
+						{% for match in context.trip.passengers %}
+							<div>
+								<p style="font-weight: bold;"> {{ match.destination }} </p>
+								<div style="display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px;">
+									<p>From: {{ match.origin }} </p> 
+									<p>Username: {{ match.user.username }} </p>
+									<p>Status: {{ match.status }} </p>
+								</div>
+							</div>
+						{% endfor %}
+					</div>
+				{% endif %}
+			{% endif %}
+		{% endif %}
+	</div>
+	
+	</div>
+</div>
+
+<script>
+	let marker, circle, dMarker, zoomed;
+	let currenRroute, currentDest, current_location;
+	const startLat = '{{ context.trip.origin_lat }}'
+	const startLon = '{{ context.trip.origin_lon }}'
+	const endLat = '{{ context.trip.destination_lat }}'
+	const endLon = '{{ context.trip.destination_lon }}'
+	const trip = '{{ context.trip }}'
+	const west = 30.8203
+	const south = 38.6769
+	const east = 33.8558
+	const north = 40.7537
+	const center = [39.9334, 32.8597];
+
+	// Initializes map
+	const map = L.map('map', {
+    		maxZoom: 18,
+    		// minZoom: 8,
+    		// maxBoundsViscosity: 1.0
+	});
+	// Sets initial coordinates and zoom level
+	map.setView(center, 13);
+	
+	const bounds = L.latLngBounds(
+		L.latLng(south, west),
+		L.latLng(north, east)
+	);
+	
+	// map.setMaxBounds(bounds);
+
+	// Sets map data source and associates with map
+	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    		attribution: '© OpenStreetMap'
+	}).addTo(map);
+
+	// Declare function to draw map
+	function drawRoute(startLat, startLon, endLat, endLon) {
+		fetch('https://router.project-osrm.org/route/v1/driving/' + startLon + ',' + startLat + ';' + endLon + ',' + endLat + '?geometries=geojson&steps=true&overview=full')
+    		.then(function (response) {
+        		return response.json();
+    		})
+    		.then(function (json) {
+        		// Parse the response and create a LatLng array for the route
+        		const route = json.routes[0];
+        		const lineString = route.geometry;
+        		let latLngs = [];
+        		currentRoute = []
+        		for (var i = 0; i < lineString.coordinates.length; i++) {
+            			latLngs.push(L.latLng(lineString.coordinates[i][1], lineString.coordinates[i][0]));
+        		}	
+    				
+    			// Add new markers and circle
+    			dMarker = L.marker([endLat, endLon]).addTo(map);
+        		// Add the route to the map
+        		polyline = L.polyline(latLngs, {color: 'red'}).addTo(map);
+    		})
+    		.catch(error => {
+    			console.log(error);
+    		})
+	} 
+	
+	if (trip.status === 'active') {
+		navigator.geolocation.watchPosition(success, error);
+
+		function success(pos) {
+
+			const startLat = pos.coords.latitude;
+			const startLon = pos.coords.longitude;
+			const accuracy = pos.coords.accuracy;
+			
+			// Remove existing marker and circle
+			if (marker) {
+				map.removeLayer(marker);
+	        		map.removeLayer(circle);
+	    		}
+	    		
+	    		if (dMarker) {
+	    			map.removeLayer(dMarker);
+	    		}
+	
+	
+	    		marker = L.marker([startLat, startLon]).addTo(map);
+	    		circle = L.circle([startLat, startLon], { radius: accuracy }).addTo(map);
+	
+	    		if (!zoomed) {
+	        		zoomed = map.fitBounds(circle.getBounds()); 
+	    		}
+	
+	    		map.setView([startLat, startLon]);
+			drawRoute(startLat, startLon, endLat, endLon);
+		}
+		
+		function error(err) {
+    			if (err.code === 1) {
+        			alert("Please allow geolocation access");
+    			} else {
+        			alert("Cannot get current location");
+   			}
+		}
+	} else {
+		marker = L.marker([startLat, startLon]).addTo(map);
+    		map.setView([startLat, startLon]);
+    		drawRoute(startLat, startLon, endLat, endLon);
+	}
+	
+</script>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "carpooling/main.html" %}
+{% block head %}
+	<style>
+		.ride-btn {
+			width: 150px;
+			margin: 10px;
+			height: 50px;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			background-color: #142580;
+			color: white;
+			border: none;
+			border-radius: 25px;
+		}
+		
+		.ride-btn a {
+			color: white;
+			font-weight: bold;
+		}
+
+	</style>
+{% endblock %}
+{% block content %}
+	<div class="pool-wrapper">
+		<div class="ride-btn">
+			<a href="/create-ride" >Offer Ride Baran</a>
+		</div>
+		<div class="ride-btn">
+			<a href="/join-ride" >Find Ride</a>
+		</div>
+	</div>
+{% endblock %}
